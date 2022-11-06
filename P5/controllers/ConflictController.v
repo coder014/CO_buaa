@@ -6,6 +6,7 @@ module ConflictController(
     input [4:0] RtD,
     input [4:0] RsE,
     input [4:0] RtE,
+    input [4:0] RtM,
     input [4:0] RegAddrE,
     input [4:0] RegAddrM,
     input [4:0] RegAddrW,
@@ -22,7 +23,8 @@ module ConflictController(
     output reg ForwardAD,
     output reg ForwardBD,
     output reg [1:0] ForwardAE,
-    output reg [1:0] ForwardBE
+    output reg [1:0] ForwardBE,
+    output reg ForwardM
     );
 
     //=================Forward Check Zone=================
@@ -50,6 +52,11 @@ module ConflictController(
         if ((RtD != 0) && RegWriteM && (RtD == RegAddrM))
             ForwardBD = `D_FW_USE_M;
         else ForwardBD = `D_FW_USE_S;
+        
+        //Special: store instructions check forwarding ......
+        if ((RtM != 0) && RegWriteW && (RtM == RegAddrW))
+            ForwardM = `M_FW_USE_W;
+        else ForwardM = `M_FW_USE_S;
     end
 
     //==================Stall Check Zone==================

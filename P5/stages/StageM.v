@@ -10,6 +10,8 @@ module StageM(
     input [31:0] WriteData_in,
     input [4:0] RegAddr_in,
     input [31:0] pc_in,
+    input [4:0] rt_in,
+    output reg [4:0] rt_out,
     output reg RegWrite_out,
     output reg MemWrite_out,
     output reg MemToReg_out,
@@ -28,6 +30,7 @@ module StageM(
             WriteData_out <= 0;
             RegAddr_out <= 0;
             pc_out <= 0;
+            rt_out <= 0;
         end else begin
             RegWrite_out <= RegWrite_in;
             MemWrite_out <= MemWrite_in;
@@ -36,6 +39,7 @@ module StageM(
             WriteData_out <= WriteData_in;
             RegAddr_out <= RegAddr_in;
             pc_out <= pc_in;
+            rt_out <= rt_in;
         end
     end
 

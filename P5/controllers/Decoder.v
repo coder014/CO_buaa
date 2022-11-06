@@ -56,6 +56,9 @@ module Decoder(
         
         if(ori || lw || lui || jal || jr) RtUsage = `VALUE_USE_NONE;
         else if(beq) RtUsage = `VALUE_USE_NOW;
+        //Caution! For sb/sw/sh instruction needs rt value at the NEXT of the NEXT cycle
+        //?? so it's ok to regard it as USE_NONE WITHOUT STALL ??
+        else if(sw) RtUsage = `VALUE_USE_NONE;
         else RtUsage = `VALUE_USE_NEXT;
     end
 

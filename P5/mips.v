@@ -143,7 +143,7 @@ module mips(
     //===================Stage M(Memory)===================
     wire reg_write_M, mem_write_M, mem_to_reg_M;
     wire [31:0] write_data_M, pc8_M;
-    wire [4:0] reg_addr_M;
+    wire [4:0] reg_addr_M, rt_M;
     StageM StageM(
         .clk(clk), 
         .rst(reset), 
@@ -154,6 +154,8 @@ module mips(
         .WriteData_in(write_data_E), 
         .RegAddr_in(reg_addr_E), 
         .pc_in(pc8_E), 
+        .rt_in(rt_E),
+        .rt_out(rt_M),
         .RegWrite_out(reg_write_M), 
         .MemWrite_out(mem_write_M), 
         .MemToReg_out(mem_to_reg_M), 
@@ -162,13 +164,15 @@ module mips(
         .RegAddr_out(reg_addr_M), 
         .pc_out(pc8_M)
     );
-    wire [31:0] read_data_M;
+    wire [31:0] read_data_M, write_data_with_fw;
+    wire forward_M;
+    mux2 #(32) Mux_FW_write_data_M(.sel(forward_M), .in0(write_data_M), .in1(result_W), .out(write_data_with_fw));
     DM DM(
         .clk(clk), 
         .rst(reset), 
         .str(mem_write_M), 
         .A(alu_out_M[13:2]), 
-        .D(write_data_M), 
+        .D(write_data_with_fw), 
         .pc8(pc8_M), 
         .RD(read_data_M)
     );
@@ -200,6 +204,7 @@ module mips(
         .RtD(rt_D), 
         .RsE(rs_E), 
         .RtE(rt_E), 
+        .RtM(rt_M),
         .RegAddrE(reg_addr_E), 
         .RegAddrM(reg_addr_M), 
         .RegAddrW(reg_addr_W), 
@@ -216,7 +221,8 @@ module mips(
         .ForwardAD(forward_a_D), 
         .ForwardBD(forward_b_D), 
         .ForwardAE(forward_a_E), 
-        .ForwardBE(forward_b_E)
+        .ForwardBE(forward_b_E),
+        .ForwardM(forward_M)
     );
 
 endmodule
