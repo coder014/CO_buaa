@@ -13,7 +13,7 @@ module CPU_tb;
 		clk=0;
 		reset=1;
 		#12 reset=0;
-        #800 $finish;
+        //#800 $finish;
 	end
     
     always #4 clk=~clk;

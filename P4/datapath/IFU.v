@@ -12,7 +12,7 @@ module IFU(
     output [31:0] Instr //Instruction read out
     );
 
-    wire [13:2] internal_addr = PC[13:2];
+    wire [15:2] internal_addr = PC[15:2];
     reg [31:0] npc;
     assign PC_4 = PC + 4;
     IM im(.A(internal_addr), .D(Instr)); //Instantiate an IM
