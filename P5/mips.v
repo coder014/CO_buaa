@@ -106,7 +106,7 @@ module mips(
         .rt_in(rt_D), 
         .rd_in(ins_D[15:11]), 
         .imm_in(sign_imm_D), 
-        .pc_in(pc4_D + 4), 
+        .pc_in(pc4_D + 4), // use pc+8 starting from E
         .RegWrite_out(reg_write_E), 
         .MemWrite_out(mem_write_E), 
         .RegDst_out(reg_dst_E), 
