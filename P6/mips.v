@@ -2,21 +2,32 @@
 `timescale 1ns / 1ps
 
 module mips(
-    input wire clk,
-    input wire reset
+    input clk,
+    input reset,
+    input [31:0] i_inst_rdata, //Instruction get from external IM
+    output [31:0] i_inst_addr, //PC address send to external IM
+    input [31:0] m_data_rdata, //Data get from external memory
+    output [31:0] m_data_addr, //Data address send to external memory
+    output [31:0] m_data_wdata, //Data send to external memory
+    output [3:0] m_data_byteen, //Byte enable signal send to external memory
+    output [31:0] m_inst_addr, //PC address send out for debug output
+    output w_grf_we, //GRF write enable signal send out for debug output
+    output [4:0] w_grf_addr, //GRF write reg number send out for debug output
+    output [31:0] w_grf_wdata, //GRF write reg data send out for debug output
+    output [31:0] w_inst_addr //PC address send out for debug output
     );
 
     //===================Stage F(Fetch)===================
     wire npc_sel, stall_F;
-    wire [31:0] npc_imm, ins_F, pc4_F;
+    wire [31:0] npc_imm, pc4_F;
     IFU IFU(
         .clk(clk), 
         .rst(reset), 
         .sel(npc_sel), 
         .imm(npc_imm), 
-        .stall(stall_F), 
-        .PC_4(pc4_F), 
-        .Instr(ins_F)
+        .stall(stall_F),
+        .PC(i_inst_addr),
+        .PC_4(pc4_F)
     );
     
     //===================Stage D(Decode)===================
@@ -26,7 +37,7 @@ module mips(
         .clk(clk), 
         .rst(reset), 
         .stall(stall_D), 
-        .instr_in(ins_F), 
+        .instr_in(i_inst_rdata), 
         .pc_in(pc4_F), 
         .instr_out(ins_D), 
         .pc_out(pc4_D)
@@ -35,7 +46,7 @@ module mips(
     wire [3:0] jump_type, alu_ctr_D;
     wire [1:0] rs_usage, rt_usage;
     wire move_from_mdu_D, move_to_mdu_D, start_mdu_D;
-    wire [2:0] mdu_sel_D;
+    wire [2:0] mdu_sel_D, mem_sel_D;
     Decoder Decoder(
         .opcode(ins_D[31:26]), 
         .funct(ins_D[5:0]), 
@@ -51,6 +62,7 @@ module mips(
         .MoveToMDU(move_to_mdu_D),
         .StartMDU(start_mdu_D),
         .MDUSel(mdu_sel_D),
+        .MemSel(mem_sel_D),
         .RsUsage(rs_usage), 
         .RtUsage(rt_usage)
     );
@@ -60,6 +72,10 @@ module mips(
     wire [31:0] pc8_W, result_W;
     wire [4:0] reg_addr_W;
     wire reg_write_W;
+    assign w_grf_we = reg_write_W;
+    assign w_grf_addr = reg_addr_W;
+    assign w_grf_wdata = result_W;
+    assign w_inst_addr = pc8_W - 8;
     GRF GRF(
         .clk(clk), 
         .WE(reg_write_W), 
@@ -68,7 +84,6 @@ module mips(
         .A2(rt_D), 
         .A3(reg_addr_W), 
         .WD(result_W), 
-        .PC8(pc8_W), 
         .RD1(data1_D), 
         .RD2(data2_D)
     );
@@ -96,7 +111,7 @@ module mips(
     wire [31:0] data1_E, data2_E, sign_imm_E, pc8_E;
     wire [4:0] rs_E, rt_E, rd_E;
     wire move_from_mdu_E, move_to_mdu_E, start_mdu_E;
-    wire [2:0] mdu_sel_E;
+    wire [2:0] mdu_sel_E, mem_sel_E;
     StageE StageE(
         .clk(clk), 
         .rst(reset), 
@@ -119,6 +134,7 @@ module mips(
         .MoveToMDU_in(move_to_mdu_D),
         .StartMDU_in(start_mdu_D),
         .MDUSel_in(mdu_sel_D),
+        .MemSel_in(mem_sel_D),
         .RegWrite_out(reg_write_E), 
         .MemWrite_out(mem_write_E), 
         .RegDst_out(reg_dst_E), 
@@ -136,7 +152,8 @@ module mips(
         .MoveFromMDU_out(move_from_mdu_E),
         .MoveToMDU_out(move_to_mdu_E),
         .StartMDU_out(start_mdu_E),
-        .MDUSel_out(mdu_sel_E)
+        .MDUSel_out(mdu_sel_E),
+        .MemSel_out(mem_sel_E)
     );
     wire [1:0] forward_a_E, forward_b_E;
     wire [31:0] alu_data_a, alu_data_b, write_data_E;
@@ -173,6 +190,7 @@ module mips(
     wire reg_write_M, mem_write_M, mem_to_reg_M;
     wire [31:0] write_data_M, pc8_M;
     wire [4:0] reg_addr_M, rt_M;
+    wire [2:0] mem_sel_M;
     StageM StageM(
         .clk(clk), 
         .rst(reset), 
@@ -184,6 +202,7 @@ module mips(
         .RegAddr_in(reg_addr_E), 
         .pc_in(pc8_E), 
         .rt_in(rt_E),
+        .MemSel_in(mem_sel_E),
         .rt_out(rt_M),
         .RegWrite_out(reg_write_M), 
         .MemWrite_out(mem_write_M), 
@@ -191,12 +210,29 @@ module mips(
         .ALUOut_out(alu_out_M), 
         .WriteData_out(write_data_M), 
         .RegAddr_out(reg_addr_M), 
-        .pc_out(pc8_M)
+        .pc_out(pc8_M),
+        .MemSel_out(mem_sel_M)
     );
     wire [31:0] read_data_M, write_data_with_fw;
     wire forward_M;
     mux2 #(32) Mux_FW_write_data_M(.sel(forward_M), .in0(write_data_M), .in1(result_W), .out(write_data_with_fw));
-    DM DM(
+    ByteEn BE(
+        .MemWrite(mem_write_M), 
+        .sel(mem_sel_M), 
+        .AddrLow(alu_out_M[1:0]),
+        .RawData(write_data_with_fw),
+        .En(m_data_byteen),
+        .ParsedData(m_data_wdata)
+    );
+    assign m_inst_addr = pc8_M - 8;
+    assign m_data_addr = alu_out_M;
+    MemDataExt MDE(
+        .sel(mem_sel_M), 
+        .AddrLow(alu_out_M[1:0]), 
+        .RawData(m_data_rdata), 
+        .ParsedData(read_data_M)
+    );
+    /*DM DM(
         .clk(clk), 
         .rst(reset), 
         .str(mem_write_M), 
@@ -204,7 +240,7 @@ module mips(
         .D(write_data_with_fw), 
         .pc8(pc8_M), 
         .RD(read_data_M)
-    );
+    );*/
             
     //===================Stage W(Write back)===================
     wire mem_to_reg_W;

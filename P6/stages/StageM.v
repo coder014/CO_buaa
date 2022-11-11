@@ -11,6 +11,7 @@ module StageM(
     input [4:0] RegAddr_in,
     input [31:0] pc_in,
     input [4:0] rt_in,
+    input [2:0] MemSel_in,
     output reg [4:0] rt_out,
     output reg RegWrite_out,
     output reg MemWrite_out,
@@ -18,7 +19,8 @@ module StageM(
     output reg [31:0] ALUOut_out,
     output reg [31:0] WriteData_out,
     output reg [4:0] RegAddr_out,
-    output reg [31:0] pc_out
+    output reg [31:0] pc_out,
+    output reg [2:0] MemSel_out
     );
 
     always@(posedge clk) begin
@@ -31,6 +33,7 @@ module StageM(
             RegAddr_out <= 0;
             pc_out <= 0;
             rt_out <= 0;
+            MemSel_out <= 0;
         end else begin
             RegWrite_out <= RegWrite_in;
             MemWrite_out <= MemWrite_in;
@@ -40,6 +43,7 @@ module StageM(
             RegAddr_out <= RegAddr_in;
             pc_out <= pc_in;
             rt_out <= rt_in;
+            MemSel_out <= MemSel_in;
         end
     end
 

@@ -78,22 +78,27 @@
 |       sub       |   1   |   0   | ALUOP_SUB |   0    |    1     |    0     |  JUMP_NONE  |0|
 |       lui       |   0   |   0   | ALUOP_LUI |   1    |    1     |    0     |  JUMP_NONE  |0|
 |       ori       |   0   |   0   | ALUOP_ORI |   1    |    1     |    0     |  JUMP_NONE  |0|
-|       sw        |   -    |   -    | ALUOP_ADD |   1    |    0     |    1     |  JUMP_NONE  |-|
-|       lw        |   0   |   1   | ALUOP_ADD |   1    |    1     |    0     |  JUMP_NONE  |0|
 |       beq       |   -    |   -    |     -     |   -    |    0     |    0     | JUMP_BEQ |-|
 | bne | - | - | - | - | 0 | 0 | JUMP_BNE |-|
 |       nop       |   -    |   -    |     -     |   -    |    0     |    0     |  JUMP_NONE  |-|
 |       jal       | - | 0 |     -     | - |    1     |    0     | JUMP_JAL |1|
 |       jr        | - | - |      -      | - |    0     |    0     |  JUMP_JR  |-|
-
-| 指令 \ 控制信号 | RegDst | MemToReg | ALUCtr[3:0] | ALUSrc | RegWrite | MemWrite |   JType[3:0]   | Link |
-| :-------------: | :----: | :----: | :-------: | :----: | :------: | :------: | :--------: | :-------: |
 |       and       |   1   |   0   | ALUOP_AND |   0    |    1     |    0     |  JUMP_NONE  |0|
 | or | 1 | 0 | ALUOP_OR | 0 | 1 | 0 | JUMP_NONE |0|
 | andi | 0 | 0 | ALUOP_ANDI | 1 | 1 | 0 | JUMP_NONE |0|
 | addi | 0 | 0 | ALUOP_ADD | 1 | 1 | 0 | JUMP_NONE |0|
 | slt | 1 | 0 | ALUOP_SLT | 0 | 1 | 0 | JUMP_NONE |0|
 | sltu | 1 | 0 | ALUOP_SLTU | 0 | 1 | 0 | JUMP_NONE |0|
+
+| 指令 \ 控制信号 | MemSel | RegDst | MemToReg | RegWrite | MemWrite | ALUCtr[3:0] | ALUSrc |
+| :-------------: | :--------: | :----: | :----: | :-------: | :----: | :------: | :-------------: |
+| sw | MEM_STORE_WORD | - | - | 0 | 1 | ALUOP_ADD | 1 |
+| lw | MEM_LOAD_WORD | 0 | 1 | 1 | 0 | ALUOP_ADD | 1 |
+| sh | MEM_STORE_HALF | - | - | 0 | 1 | ALUOP_ADD | 1 |
+| lh | MEM_LOAD_HALF | 0 | 1 | 1 | 0 | ALUOP_ADD | 1 |
+| sb | MEM_STORE_BYTE | - | - | 0 | 1 | ALUOP_ADD | 1 |
+| lb | MEM_LOAD_BYTE | 0 | 1 | 1 | 0 | ALUOP_ADD | 1 |
+| 其他指令 | - | … | 0 | … | 0 | … | … |
 
 | 指令 \ 控制信号 | MoveFromMDU | MoveToMDU | MDUSel[2:0] | StartMDU | RegDst | RegWrite |
 | :-------------: | :----: | :----: | :-------: | :----: | :------: | :--------: |
@@ -112,16 +117,13 @@
 | add / sub | VALUE_USE_NEXT | VALUE_USE_NEXT |
 | lui | VALUE_USE_NONE | VALUE_USE_NONE |
 | ori | VALUE_USE_NEXT | VALUE_USE_NONE |
-| sw | VALUE_USE_NEXT | VALUE_USE_NONE[^1] |
-| lw | VALUE_USE_NEXT | VALUE_USE_NONE |
+| sw / sh / sb | VALUE_USE_NEXT | VALUE_USE_NONE[^1] |
+| lw / lh / lb | VALUE_USE_NEXT | VALUE_USE_NONE |
 | beq | VALUE_USE_NOW | VALUE_USE_NOW |
 | bne | VALUE_USE_NOW | VALUE_USE_NOW |
 | nop / sll | VALUE_USE_NEXT[^2] | VALUE_USE_NEXT[^2] |
 | jal | VALUE_USE_NONE | VALUE_USE_NONE |
 | jr | VALUE_USE_NOW | VALUE_USE_NONE |
-
-| 指令 \ 控制信号 | RsUsage[1:0] | RtUsage[1:0] |
-| :-------------: | :----: | :----: |
 | and / or | VALUE_USE_NEXT | VALUE_USE_NEXT |
 | andi | VALUE_USE_NEXT | VALUE_USE_NONE |
 | addi | VALUE_USE_NEXT | VALUE_USE_NONE |
@@ -130,7 +132,7 @@
 | mfhi / mflo[^3] | VALUE_USE_NONE | VALUE_USE_NONE |
 | mthi / mtlo | VALUE_USE_NEXT | VALUE_USE_NONE |
 
-[^1]: `sw`指令的`rt`值在M级才会使用到，此时其前序指令均已计算/取出完成，可通过W->M转发保证正确性，故使用`VALUE_USE_NONE`
+[^1]: `sw/sh/sb`指令的`rt`值在M级才会使用到，此时其前序指令均已计算/取出完成，可通过W->M转发保证正确性，故使用`VALUE_USE_NONE`
 [^2]: `nop`为特殊的`sll`指令，由于`rs`、`rt`寄存器均为0，故不会触发阻塞
 [^3]: 使用独立于`RsUsage`、`RtUsage`之外的判据进行阻塞判定（`MoveFromMDU`、`StartMDU`、`MoveToMDU`与`MDUBusy`）
 

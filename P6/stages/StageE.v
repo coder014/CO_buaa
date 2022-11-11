@@ -22,6 +22,7 @@ module StageE(
     input MoveToMDU_in,
     input StartMDU_in,
     input [2:0] MDUSel_in,
+    input [2:0] MemSel_in,
     output reg RegWrite_out,
     output reg MemWrite_out,
     output reg RegDst_out,
@@ -39,7 +40,8 @@ module StageE(
     output reg MoveFromMDU_out,
     output reg MoveToMDU_out,
     output reg StartMDU_out,
-    output reg [2:0] MDUSel_out
+    output reg [2:0] MDUSel_out,
+    output reg [2:0] MemSel_out
     );
 
     always@(posedge clk) begin
@@ -62,6 +64,7 @@ module StageE(
             MoveToMDU_out <= 0;
             StartMDU_out <= 0;
             MDUSel_out <= 0;
+            MemSel_out <= 0;
         end else begin
             RegWrite_out <= RegWrite_in;
             MemWrite_out <= MemWrite_in;
@@ -81,6 +84,7 @@ module StageE(
             MoveToMDU_out <= MoveToMDU_in;
             StartMDU_out <= StartMDU_in;
             MDUSel_out <= MDUSel_in;
+            MemSel_out <= MemSel_in;
         end
     end
 

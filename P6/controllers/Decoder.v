@@ -16,6 +16,7 @@ module Decoder(
     output MoveToMDU,
     output StartMDU,
     output reg [2:0] MDUSel,
+    output reg [2:0] MemSel,
     output reg [1:0] RsUsage,
     output reg [1:0] RtUsage
     );
@@ -31,6 +32,10 @@ module Decoder(
     wire addi = opcode == 6'b001000;
     wire lw = opcode == 6'b100011;
     wire sw = opcode == 6'b101011;
+    wire lh = opcode == 6'b100001;
+    wire sh = opcode == 6'b101001;
+    wire lb = opcode == 6'b100000;
+    wire sb = opcode == 6'b101000;
     wire beq = opcode == 6'b000100;
     wire bne = opcode == 6'b000101;
     wire jal = opcode == 6'b000011;
@@ -46,12 +51,13 @@ module Decoder(
     wire mflo = special && (funct == 6'b010010);
     wire mtlo = special && (funct == 6'b010011);
 
-    assign MemWrite = sw;
-    assign RegWrite = add||sub||lui||andi||ori||lw||jal||_and_||_or_||addi||slt||sltu
+    assign MemWrite = sw||sh||sb;
+    assign RegWrite = add||sub||lui||andi||ori||lw||lh||lb||jal
+                      ||_and_||_or_||addi||slt||sltu
                       ||mfhi||mflo;
-    assign ALUSrc = lui||andi||ori||sw||lw||addi;
+    assign ALUSrc = lui||andi||ori||sw||lw||sh||lh||sb||lb||addi;
     assign RegDst = add||sub||_and_||_or_||slt||sltu||mfhi||mflo;
-    assign MemToReg = lw;
+    assign MemToReg = lw||lh||lb;
     assign Link = jal;
     
     assign MoveFromMDU = mfhi||mflo;
@@ -65,11 +71,21 @@ module Decoder(
         else if(divu) MDUSel = `MULDIV_DO_DIVU;
         else if(mfhi||mthi) MDUSel = `MULDIV_SELECT_HI;
         else if(mflo||mtlo) MDUSel = `MULDIV_SELECT_LO;
-        else MDUSel = 0;
+        else MDUSel = 3'b111;
+    end
+    
+    always@(*) begin
+        if(sw) MemSel = `MEM_STORE_WORD;
+        else if(sh) MemSel = `MEM_STORE_HALF;
+        else if(sb) MemSel = `MEM_STORE_BYTE;
+        else if(lw) MemSel = `MEM_LOAD_WORD;
+        else if(lh) MemSel = `MEM_LOAD_HALF;
+        else if(lb) MemSel = `MEM_LOAD_BYTE;
+        else MemSel = 3'b111;
     end
 
     always@(*) begin
-        if(add|| addi || lw || sw) ALUCtr = `ALUOP_ADD;
+        if(add|| addi || lw || sw || lh || sh || lb || sb) ALUCtr = `ALUOP_ADD;
         else if(sub) ALUCtr = `ALUOP_SUB;
         else if(lui) ALUCtr = `ALUOP_LUI;
         else if(andi) ALUCtr = `ALUOP_ANDI;
@@ -94,12 +110,12 @@ module Decoder(
         else if(beq || bne || jr) RsUsage = `VALUE_USE_NOW;
         else RsUsage = `VALUE_USE_NEXT;
         
-        if(andi || ori || lw || lui || jal || jr || addi) RtUsage = `VALUE_USE_NONE;
+        if(andi || ori || lui || jal || jr || addi) RtUsage = `VALUE_USE_NONE;
         else if(mfhi || mflo || mthi || mtlo) RtUsage = `VALUE_USE_NONE;
         else if(beq || bne) RtUsage = `VALUE_USE_NOW;
         //Caution! For sb/sw/sh instruction needs rt value at the NEXT of the NEXT cycle
         //?? so it's ok to regard it as USE_NONE WITHOUT STALL ??
-        else if(sw) RtUsage = `VALUE_USE_NONE;
+        else if(sw || sh || sb || lw || lh || lb) RtUsage = `VALUE_USE_NONE;
         else RtUsage = `VALUE_USE_NEXT;
     end
 

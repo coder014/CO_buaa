@@ -15,6 +15,13 @@
 `define MULDIV_SELECT_LO 3'b000
 `define MULDIV_SELECT_HI 3'b001
 
+`define MEM_STORE_WORD 3'd0
+`define MEM_STORE_HALF 3'd1
+`define MEM_STORE_BYTE 3'd2
+`define MEM_LOAD_WORD 3'd0
+`define MEM_LOAD_HALF 3'd1
+`define MEM_LOAD_BYTE 3'd2
+
 `define JUMP_NONE 4'd0
 `define JUMP_BEQ 4'd1
 `define JUMP_JAL 4'd2

@@ -28,8 +28,7 @@ module MulDiv(
             end else if(sel==`MULDIV_SELECT_HI) begin
                 hi <= A;
             end
-        end
-        else if(start) begin
+        end else if(start) begin
             if(sel==`MULDIV_DO_MUL) begin
                 ctr <= 5;
                 {hi, lo} <= $signed(A) * $signed(B);
