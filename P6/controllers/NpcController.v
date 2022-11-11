@@ -11,8 +11,6 @@ module NpcController(
     output reg [31:0] out,
     output reg sel
     );
-    
-    wire [31:0] pc = pc4 - 4;
 
     always@(*) begin
         case(op)
@@ -30,7 +28,7 @@ module NpcController(
             end
             `JUMP_JAL: begin
                 sel = 1;
-                out = {pc[31:28], imm26, 2'b00};
+                out = {pc4[31:28], imm26, 2'b00};
             end
             `JUMP_JR: begin
                 sel = 1;
