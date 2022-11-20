@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module mips_txt;
+module mips_txt_intr;
 
 	reg clk;
 	reg reset;

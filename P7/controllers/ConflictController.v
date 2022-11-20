@@ -8,7 +8,7 @@ module ConflictController(
     input [4:0] RtE,
     input [4:0] RdE,
     input [4:0] RtM,
-    input [4:0] RdM,
+    //input [4:0] RdM,
     input [4:0] RegAddrE,
     input [4:0] RegAddrM,
     input [4:0] RegAddrW,
@@ -25,7 +25,7 @@ module ConflictController(
     input MoveToMDUE,
     input EretD,
     input Mtc0E,
-    input Mtc0M,
+    //input Mtc0M,
     input Mfc0E,
     input Mfc0M,
     output StallD,
@@ -89,7 +89,7 @@ module ConflictController(
         endcase
     end
     wire stall_mdu = MoveFromMDUD && (StartMDUE || MDUBusyE) && (!MoveToMDUE);
-    wire stall_eret = EretD && ((Mtc0E && RdE==5'd14) || (Mtc0M && RdM==5'd14));
+    wire stall_eret = EretD && Mtc0E && RdE==5'd14;
     assign StallD = stall_rs || stall_rt || stall_mdu || stall_eret;
     assign StallF = StallD;
     assign FlushE = StallD;

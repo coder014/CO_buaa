@@ -12,15 +12,17 @@ module Coprocessor0(
     input [4:0] ExcCode,
     input [5:0] HwInt,
     input Eret,
-    output reg [31:0] EPC,
+    output [31:0] EPCOut,
     output IRQ
     );
 
-    reg [31:0] SR, Cause;
+    reg [31:0] SR, Cause, EPC;
     
     wire ExcIRQ = !(SR[1]) && (|ExcCode);
     wire HwIRQ = !(SR[1]) && SR[0] && (|(SR[15:10] & HwInt));
     assign IRQ = ExcIRQ || HwIRQ;
+    
+    assign EPCOut = (!IRQ && WE && A==5'd14) ? Data : EPC; //EPC internal forwarding
     
     always@(*) begin
         if(A==5'd12) Out = SR;

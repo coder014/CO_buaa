@@ -296,7 +296,7 @@ module CPU(
         .ExcCode(exc_M), 
         .HwInt(hw_int), 
         .Eret(eret_M), 
-        .EPC(epc), 
+        .EPCOut(epc), 
         .IRQ(cp0_req)
     );
     mux2 #(32) Mux_Sel_ALU_CP0(.sel(mfc0_M), .in0(alu_out_M), .in1(cp0_out_M), .out(result_M));
@@ -331,7 +331,7 @@ module CPU(
         .RtE(rt_E), 
         .RdE(rd_E),
         .RtM(rt_M),
-        .RdM(rd_M),
+        //.RdM(rd_M),
         .RegAddrE(reg_addr_E), 
         .RegAddrM(reg_addr_M), 
         .RegAddrW(reg_addr_W), 
@@ -348,7 +348,7 @@ module CPU(
         .MoveToMDUE(move_to_mdu_E),
         .EretD(eret_D),
         .Mtc0E(mtc0_E),
-        .Mtc0M(mtc0_M),
+        //.Mtc0M(mtc0_M),
         .Mfc0E(mfc0_E),
         .Mfc0M(mfc0_M),
         .StallD(stall_D), 
