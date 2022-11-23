@@ -72,8 +72,8 @@ module mips_txt_intr;
 	assign i_inst_rdata = inst[((i_inst_addr - 32'h3000) >> 2) % 5120];
 
 	initial begin
+        for (i = 0; i < 5120; i = i + 1) inst[i] = 0;
 		$readmemh("code.txt", inst);
-		for (i = 0; i < 5120; i = i + 1) data[i] <= 0;
 	end
 
 	// ----------- For Data Memory -----------

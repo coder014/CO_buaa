@@ -130,18 +130,18 @@ module Decoder(
     end
     
     always@(*) begin
-        if(lui || jal || mfhi || mflo || MFC0 || MTC0 || syscall || ERET) RsUsage = `VALUE_USE_NONE;
+        if(!KnownOP) RsUsage = `VALUE_USE_NONE;
+        else if(lui || jal || mfhi || mflo || MFC0 || MTC0 || syscall || ERET) RsUsage = `VALUE_USE_NONE;
         else if(beq || bne || jr) RsUsage = `VALUE_USE_NOW;
-        else if(!KnownOP) RsUsage = `VALUE_USE_NONE;
         else RsUsage = `VALUE_USE_NEXT;
         
-        if(andi || ori || lui || jal || jr || addi || syscall || ERET) RtUsage = `VALUE_USE_NONE;
+        if(!KnownOP) RtUsage = `VALUE_USE_NONE;
+        else if(andi || ori || lui || jal || jr || addi || syscall || ERET) RtUsage = `VALUE_USE_NONE;
         else if(mfhi || mflo || mthi || mtlo || MFC0 || MTC0) RtUsage = `VALUE_USE_NONE;
         else if(beq || bne) RtUsage = `VALUE_USE_NOW;
         //Caution! For sb/sw/sh instruction needs rt value at the NEXT of the NEXT cycle
         //?? so it's ok to regard it as USE_NONE WITHOUT STALL ??
         else if(sw || sh || sb || lw || lh || lb) RtUsage = `VALUE_USE_NONE;
-        else if(!KnownOP) RtUsage = `VALUE_USE_NONE;
         else RtUsage = `VALUE_USE_NEXT;
     end
 

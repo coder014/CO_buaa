@@ -128,7 +128,9 @@ module StageE(
             MFC0_out <= 0;
             MTC0_out <= 0;
             ERET_out <= 0;
-            exc_out <= 0;
+            exc_out <= 0; //or exc_in
+            pc_out <= pc_in;
+            slot_out <= slot_in;
         end else begin
             RegWrite_out <= RegWrite_in;
             MemWrite_out <= MemWrite_in;

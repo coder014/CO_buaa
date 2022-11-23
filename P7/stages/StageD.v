@@ -10,6 +10,7 @@ module StageD(
     input [31:0] pc_in,
     input [4:0] exc_in,
     input slot_in,
+    input [31:0] jumpto,
     output reg [31:0] instr_out,
     output reg [31:0] pc_out,
     output reg [4:0] exc_out,
@@ -29,7 +30,9 @@ module StageD(
             slot_out <= 0;
         end else if(!stall && flush) begin
             instr_out <= 0;
-            exc_out <= 0;
+            exc_out <= exc_in; // or 0
+            pc_out <= jumpto;
+            slot_out <= 0;
         end else if(!stall && !flush) begin
             instr_out <= instr_in;
             pc_out <= pc_in;

@@ -55,6 +55,7 @@ module CPU(
         .pc_in(pc_F), 
         .exc_in(exc_F),
         .slot_in(slot_F),
+        .jumpto(npc_imm),
         .instr_out(ins_D), 
         .pc_out(pc_D),
         .exc_out(exc_pre_D),
