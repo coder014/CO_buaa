@@ -36,6 +36,7 @@ module StageD(
             slot_out <= 0;
         end else if(stall) begin
             pass <= 0;
+            instr <= instr_out;
         end else if(flush) begin
             pass <= 0;
             instr <= 0;

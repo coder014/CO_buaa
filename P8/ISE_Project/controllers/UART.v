@@ -1,4 +1,56 @@
-`default_nettype none
+
+module uart (
+    input clk,
+    input rstn,
+    
+    input rxd,
+    output txd,
+    output irq,
+    
+    input [31:0] Addr,
+    input WE,
+    input [31:0] Din,
+    output reg [31:0] Dout
+);
+
+    reg [15:0] DIVT, DIVR;
+    wire [7:0] rx_data;
+    wire tx_avai, rx_ready;
+    wire rx_clear = (!WE) && ((Addr>>2) == (32'h7f30>>2));
+    wire tx_start = WE && ((Addr>>2) == (32'h7f30>>2));
+    wire [7:0] tx_data = Din[7:0];
+    assign irq = rx_ready;
+    
+    always@(posedge clk) begin
+        if(~rstn) begin
+            DIVT <= 16'hFFFF;
+            DIVR <= 16'hFFFF;
+        end else if(WE) begin
+            if((Addr>>2) == (32'h7f38>>2)) DIVR <= Din[15:0];
+            else if((Addr>>2) == (32'h7f3c>>2)) DIVT <= Din[15:0];
+        end
+    end
+    
+    always@(*) begin
+        if((Addr>>2) == (32'h7f30>>2)) Dout = {24'b0, rx_data}; //DATA
+        else if((Addr>>2) == (32'h7f34>>2)) Dout = {26'b0, tx_avai, 4'b0, rx_ready}; //LSR
+        else if((Addr>>2) == (32'h7f38>>2)) Dout = {16'b0, DIVR}; //DIVR
+        else if((Addr>>2) == (32'h7f3c>>2)) Dout = {16'b0, DIVT}; //DIVT
+        else Dout = 0;
+    end
+    
+    uart_tx uart_tx(
+        .clk(clk), .rstn(rstn), .period(DIVT),
+        .txd(txd), .tx_start(tx_start),
+        .tx_data(tx_data), .tx_avai(tx_avai)
+    );
+    uart_rx uart_rx(
+        .clk(clk), .rstn(rstn), .period(DIVR),
+        .rxd(rxd), .rx_clear(rx_clear),
+        .rx_data(rx_data), .rx_ready(rx_ready)
+    );
+
+endmodule
 
 /*
  * uart_count is used to indicate the sample point of the receiver and transmitter

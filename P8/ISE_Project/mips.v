@@ -28,8 +28,6 @@ module mips(
     output uart_txd
     );
     
-    assign uart_txd = 1'b1;//temp
-    
     wire clk;
     CLOCK CLOCK(
         .CLK_IN1(clk_in),
@@ -54,6 +52,9 @@ module mips(
     
     wire [31:0] tube_a, tube_din, tube_dout;
     wire [3:0] tube_be;
+    
+    wire [31:0] uart_a, uart_din, uart_dout;
+    wire uart_we, uart_irq;
     
     IM IM(
         .clka(clk), // input
@@ -103,6 +104,18 @@ module mips(
         .Din(tube_din), 
         .Dout(tube_dout)
     );
+    
+    uart UART(
+        .clk(clk), 
+        .rstn(sys_rstn), 
+        .rxd(uart_rxd), 
+        .txd(uart_txd), 
+        .irq(uart_irq), 
+        .Addr(uart_a), 
+        .WE(uart_we), 
+        .Din(uart_din), 
+        .Dout(uart_dout)
+    );
 
     CPU CPU(
         .clk(clk), 
@@ -121,7 +134,7 @@ module mips(
         //.w_grf_addr(w_grf_addr), 
         //.w_grf_wdata(w_grf_wdata), 
         //.w_inst_addr(w_inst_addr), 
-        .hw_int({5'b0, t0_irq})
+        .hw_int({2'b0, uart_irq, 2'b0, t0_irq})
     );
     
     Bridge Bridge(
@@ -149,7 +162,11 @@ module mips(
         .TubeAddr(tube_a),
         .TubeBE(tube_be),
         .TubeDin(tube_din),
-        .TubeDout(tube_dout)
+        .TubeDout(tube_dout),
+        .UARTAddr(uart_a),
+        .UARTWE(uart_we),
+        .UARTDin(uart_din),
+        .UARTDout(uart_dout)
     );
 
 endmodule

@@ -31,7 +31,12 @@ module Bridge(
     output [31:0] TubeAddr,
     output [3:0] TubeBE,
     output [31:0] TubeDin,
-    input [31:0] TubeDout
+    input [31:0] TubeDout,
+    
+    output [31:0] UARTAddr,
+    output UARTWE,
+    output [31:0] UARTDin,
+    input [31:0] UARTDout
     );
     
     wire [3:0] byteen;
@@ -42,50 +47,51 @@ module Bridge(
     wire use_gpio = (data_addr>=32'h0000_7f60 && data_addr<=32'h0000_7f6b)
                     || (data_addr>=32'h0000_7f70 && data_addr<=32'h0000_7f73);
     wire use_tube = data_addr>=32'h0000_7f50 && data_addr<=32'h0000_7f57;
+    wire use_uart = data_addr>=32'h0000_7f30 && data_addr<=32'h0000_7f3f;
     
     assign DMAddr = data_addr;
     assign TC0Addr = data_addr[31:2];
     assign GPIOAddr = data_addr;
     assign TubeAddr = data_addr;
+    assign UARTAddr = ((data_sel==`MEM_STORE_WORD)||(data_sel==`MEM_LOAD_WORD)) ? data_addr : 0;
     assign DMByteen = use_dm ? byteen : 4'b0;
     assign TC0WE = use_tc0 ? (|byteen) : 1'b0;
     assign GPIOBE = use_gpio ? byteen : 4'b0;
     assign TubeBE = use_tube ? byteen : 4'b0;
+    assign UARTWE = use_uart ? (|byteen) : 1'b0;
     assign DMWdata = wdata;
     assign TC0Din = wdata;
     assign GPIODin = wdata;
     assign TubeDin = wdata;
+    assign UARTDin = wdata;
     
     always@(*) begin
         if(data_mem_write && data_sel==`MEM_STORE_WORD) begin //sw
             if(|(data_addr[1:0])) data_exc = `EXCCODE_ADES; //not aligned
-            else if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADES;//out of range
+            else if(!(use_dm||use_tc0||use_gpio||use_tube||use_uart)) data_exc = `EXCCODE_ADES;//out of range
             else if(use_tc0 && data_addr==32'h0000_7f08) data_exc = `EXCCODE_ADES;//write Count of TC0
             else if(use_gpio && data_addr<32'h0000_7f70) data_exc = `EXCCODE_ADES;//write read-only of GPIO
+            else if(use_uart && data_addr==32'h0000_7f34) data_exc = `EXCCODE_ADES;//write read-only of UART
             else data_exc = 0;
         end else if(data_mem_write && data_sel==`MEM_STORE_HALF) begin //sh
             if(data_addr[0]) data_exc = `EXCCODE_ADES; //not aligned
-            else if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADES;//out of range
-            else if(use_tc0) data_exc = `EXCCODE_ADES;//write Timer not using sw
+            else if(!(use_dm||use_gpio||use_tube)) data_exc = `EXCCODE_ADES;//out of range
             else if(use_gpio && data_addr<32'h0000_7f70) data_exc = `EXCCODE_ADES;//write read-only of GPIO
             else data_exc = 0;
         end else if(data_mem_write && data_sel==`MEM_STORE_BYTE) begin //sb
-            if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADES;//out of range
-            else if(use_tc0) data_exc = `EXCCODE_ADES;//write Timer not using sw
+            if(!(use_dm||use_gpio||use_tube)) data_exc = `EXCCODE_ADES;//out of range
             else if(use_gpio && data_addr<32'h0000_7f70) data_exc = `EXCCODE_ADES;//write read-only of GPIO
             else data_exc = 0;
         end else if(data_sel==`MEM_LOAD_WORD) begin //lw
             if(|(data_addr[1:0])) data_exc = `EXCCODE_ADEL; //not aligned
-            else if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADEL;//out of range
+            else if(!(use_dm||use_tc0||use_gpio||use_tube||use_uart)) data_exc = `EXCCODE_ADEL;//out of range
             else data_exc = 0;
         end else if(data_sel==`MEM_LOAD_HALF) begin //lh
             if(data_addr[0]) data_exc = `EXCCODE_ADEL; //not aligned
-            else if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADEL;//out of range
-            else if(use_tc0) data_exc = `EXCCODE_ADEL;//read Timer not using lw
+            else if(!(use_dm||use_gpio||use_tube)) data_exc = `EXCCODE_ADEL;//out of range
             else data_exc = 0;
         end else if(data_sel==`MEM_LOAD_BYTE) begin //lb
-            if(!(use_dm||use_tc0||use_gpio||use_tube)) data_exc = `EXCCODE_ADEL;//out of range
-            else if(use_tc0) data_exc = `EXCCODE_ADEL;//read Timer not using lw
+            if(!(use_dm||use_gpio||use_tube)) data_exc = `EXCCODE_ADEL;//out of range
             else data_exc = 0;
         end else begin //no mem operation
             data_exc = 0;
@@ -94,15 +100,22 @@ module Bridge(
     
     //除内存外均加一级寄存器，解决内存同步读问题
     reg is_mem;
+    reg [1:0] data_addr_final;
+    reg [2:0] data_sel_final;
     always@(posedge clk) begin
         if(rst) begin
             rdata <= 0;
             is_mem <= 0;
+            data_addr_final <= 0;
+            data_sel_final <= 0;
         end else begin
             is_mem <= use_dm;
+            data_addr_final <= data_addr[1:0];
+            data_sel_final <= data_sel;
             if(use_tc0) rdata <= TC0Dout;
             else if(use_gpio) rdata <= GPIODout;
             else if(use_tube) rdata <= TubeDout;
+            else if(use_uart) rdata <= UARTDout;
             else rdata <= 0;
         end
     end
@@ -118,8 +131,8 @@ module Bridge(
     );
     
     MemDataExt MDE(
-        .sel(data_sel), 
-        .AddrLow(data_addr[1:0]), 
+        .sel(data_sel_final), 
+        .AddrLow(data_addr_final), 
         .RawData(rdata_final), 
         .ParsedData(data_rdata)
     );

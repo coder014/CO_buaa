@@ -24,10 +24,10 @@ module DigitalTube(
     always@(posedge clk) begin
         if(rst) begin
             g0 <= 32'h88888888;
-            g1 <= 4'h8;
-        end else begin
-            if((|ByteEn) && ((Addr>>2) == (32'h7f50>>2))) g0 <= wdata;
-            else if((|ByteEn) && ((Addr>>2) == (32'h7f54>>2))) g1 <= wdata[3:0];
+            g1 <= 0;
+        end else if(|ByteEn) begin
+            if((Addr>>2) == (32'h7f50>>2)) g0 <= wdata;
+            else if((Addr>>2) == (32'h7f54>>2)) g1 <= wdata[3:0];
         end
     end
 
@@ -66,12 +66,13 @@ module DigitalTube(
         end
     end
 
-    assign sel0 = 4'b1 << select;
-    assign seg0 = hex2dig(g0[((select<<2)+5'd0) +: 4]);
-    assign sel1 = 4'b1 << select;
-    assign seg1 = hex2dig(g0[((select<<2)+5'd16) +: 4]);
+    assign sel0 = rst ? 4'b1111 : (4'b1 << select);
+    assign seg0 = rst ? 8'b0 : hex2dig(g0[((select<<2)+5'd0) +: 4]);
+    assign sel1 = rst ? 4'b1111 : (4'b1 << select);
+    assign seg1 = rst ? 8'b0 : hex2dig(g0[((select<<2)+5'd16) +: 4]);
     assign sel2 = 1;
-    assign seg2 = hex2dig(g1);
+    assign seg2 = rst ? 8'b0 :
+                  g1 != 4'b0 ? 8'b1111_1110 : 8'b1111_1111;
 
     function [7:0] hex2dig;
         input [3:0] hex;
