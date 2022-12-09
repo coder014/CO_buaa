@@ -11,9 +11,10 @@ module IFU(
     input [31:0] i_instr,
     output reg [31:0] PC, //Value of current pc
     output reg [4:0] exc,
-    output reg [31:0] Instr
+    output [31:0] Instr
     );
     wire [31:0] PC_4 = PC + 4;
+    assign Instr = i_instr;
     
     always@(posedge clk) begin
         if(rst) PC <= 32'h0000_3000; //Reset to 0x00003000
@@ -25,9 +26,6 @@ module IFU(
         if(|(PC[1:0])) exc = `EXCCODE_ADEL;
         else if((PC < 32'h00003000) || (PC > 32'h00006ffc)) exc = `EXCCODE_ADEL;
         else exc = 0;
-        
-        if(exc!=0) Instr = 0;
-        else Instr = i_instr;
     end
 
 endmodule

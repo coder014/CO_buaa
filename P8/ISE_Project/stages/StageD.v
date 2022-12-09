@@ -19,7 +19,7 @@ module StageD(
     
     reg [31:0] instr;
     reg pass;
-    assign instr_out = pass ? instr_in : instr;
+    assign instr_out = pass ? ((|exc_out) ? 0 : instr_in) : instr;
 
     always@(posedge clk) begin
         if(rst) begin
@@ -45,7 +45,7 @@ module StageD(
             slot_out <= 0;
         end else begin
             pass <= 1;
-            instr <= instr_in;
+            instr <= (|exc_in) ? 0 : instr_in;
             pc_out <= pc_in;
             exc_out <= exc_in;
             slot_out <= slot_in;

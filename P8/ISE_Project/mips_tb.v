@@ -14,7 +14,7 @@ module mips_tb;
 	reg [7:0] dip_switch6;
 	reg [7:0] dip_switch7;
 	reg [7:0] user_key;
-	wire uart_rxd;
+	reg uart_rxd;
     reg tx_start;
 
 	// Outputs
@@ -50,23 +50,14 @@ module mips_tb;
 		.uart_rxd(uart_rxd), 
 		.uart_txd(uart_txd)
 	);
-    
-    uart_tx tx(
-        .clk(clk_in), 
-        .rstn(sys_rstn), 
-        .period(5208), 
-        .tx_start(tx_start), 
-        .tx_data(8'hB5), 
-        .txd(uart_rxd)
-        //.tx_avai(tx_avai)
-    );
 
 	initial begin
 		// Initialize Inputs
 		clk_in = 0;
 		sys_rstn = 0;
         tx_start = 0;
-		dip_switch0 = 'hFF;
+        uart_rxd = 1'b1;
+		dip_switch0 = 'hF0;
 		dip_switch1 = 'hFF;
 		dip_switch2 = 'hFF;
 		dip_switch3 = 'hFF;
@@ -74,12 +65,12 @@ module mips_tb;
 		dip_switch5 = 'hFF;
 		dip_switch6 = 'hFF;
 		dip_switch7 = 'hFF;
-		user_key = 'hFF;
+		user_key = 'hFE;
 
 		// Wait 100 ns for global reset to finish
 		#100 sys_rstn=1;
-        #20 tx_start <= 1;
-        #5 tx_start <= 0;
+        //#20 tx_start <= 1;
+        //#5 tx_start <= 0;
         
 		// Add stimulus here
 
